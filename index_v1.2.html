@@ -1,0 +1,1233 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<title>Шарики — v1.2</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#111827;font-family:monospace,-apple-system,"Segoe UI",sans-serif}body{display:grid;place-items:center;padding:8px;overflow:hidden;color:#172033}button{font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}button:disabled{opacity:.4;cursor:default}button:focus-visible,summary:focus-visible{outline:3px solid #3b82f6;outline-offset:3px}[hidden]{display:none!important}
+#game{width:min(100%,430px);height:min(96dvh,850px);min-height:300px;background:#f4f7fb;border-radius:20px;box-shadow:0 20px 70px #0006;overflow:hidden;position:relative}#playArea{height:100%}#hud{height:88px;padding:8px 12px;background:white;border-bottom:1px solid #dbe4ef;display:flex;flex-wrap:wrap;align-content:center;justify-content:space-between;align-items:center;gap:3px 6px}.brand{font-weight:850;font-size:16px}.version{font-size:11px;color:#637187;margin-left:3px}#modeLabel{width:100%;font-size:12px;color:#536278}#hud .score{width:100%;font-size:11px;color:#536278}#menuBtn{min-width:64px;min-height:38px;border:0;background:#eef2f7;border-radius:10px;font:750 12px monospace}#board{display:block;width:100%;height:calc(100% - 88px);touch-action:none;background:#e5e7eb}#powerBar{position:absolute;bottom:10px;left:10px;right:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}#powerBar button{min-height:44px;padding:6px 3px;border:1px solid #d5dce6;border-radius:12px;background:white;color:#172033;font:750 12px monospace;box-shadow:0 3px 8px #17203312}#powerBar button[aria-pressed=true]{background:#172033;color:white;border-color:#172033}#powerHint{position:absolute;top:90px;left:8px;right:8px;font:600 10px monospace;text-align:center;color:#536278;pointer-events:none}#saveStatus{position:absolute;bottom:62px;left:10px;right:10px;font-size:10px;color:#8c3c18;background:#fff7ed;text-align:center;padding:3px;border-radius:4px}#hint{display:none}#comboToast{position:absolute;left:50%;top:40%;width:95%;transform:translateX(-50%) translateY(-6px);opacity:0;pointer-events:none;z-index:6;font-size:20px;font-weight:900;text-align:center;text-shadow:0 2px 8px white;transition:opacity .18s,transform .18s}#comboToast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.screen{position:absolute;inset:0;z-index:20;background:#f4f7fb;overflow:auto;overscroll-behavior:contain;padding:22px 18px}.head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}h1{font-size:38px;letter-spacing:-1.5px;margin:0}h2{font-size:24px;margin:0 0 12px;letter-spacing:-.5px}p{line-height:1.5}.muted{color:#637187;font-size:13px}.badge{border:1px solid #dbe4ef;border-radius:20px;padding:5px 10px;font-size:12px;font-weight:800;background:white}.wide-button{display:block;width:100%;border:0;border-radius:13px;min-height:48px;padding:13px;margin:9px 0;font:800 14px monospace;background:#172033;color:white}.secondary{background:#e7edf5;color:#172033}.small-button{min-height:40px;padding:8px 12px;border:0;background:#e7edf5;border-radius:10px;color:#172033;font-size:12px;font-weight:750}.sub{margin:0 0 18px;color:#637187;font-size:14px;line-height:1.5}.hero{height:130px;display:flex;align-items:center;justify-content:center;gap:10px}.orb{width:55px;height:55px;border-radius:50%;background:radial-gradient(circle at 33% 28%,#fff 0%,var(--c) 32%,var(--c) 75%,#0004 100%);box-shadow:0 10px 16px #17203316}.orb:nth-child(2){transform:translateY(-14px)}#homeProgress{font-weight:800;font-size:13px;margin:20px 0;color:#637187}#continueInfo{font-size:12px;color:#637187;margin:2px 0 14px;text-align:center;min-height:0}#homeNotice{font-size:11px;color:#805323}#progressSummary{font-size:13px;font-weight:800;color:#637187;margin-bottom:12px}#levelGrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.level-card{text-align:left;min-height:78px;border:1px solid #dbe4ef;background:white;border-radius:15px;padding:10px;color:#172033;font:inherit}.level-card .level-num{font-size:16px;font-weight:900}.level-name{display:block;font-size:11px;margin:4px 0}.stars{color:#ba7900;font-size:13px;letter-spacing:2px}details{font-size:12px;color:#637187;line-height:1.55;margin-top:18px}summary{font-weight:800;cursor:pointer;color:#172033}#storageNotice{font-size:11px;color:#805323}.modal{position:absolute;inset:0;z-index:30;background:#111827ae;display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto}.card{width:100%;max-width:340px;max-height:100%;overflow:auto;background:white;border-radius:20px;padding:22px;text-align:center}.card p{font-size:13px;color:#637187}#gameOver{display:none}#gameOver.show{display:flex}#endStars{color:#d99c14;font-size:32px;letter-spacing:6px}#endAdvice{border-radius:10px;background:#f4f7fb;padding:10px;line-height:1.5}#endStats{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:12px 0;text-align:left}#endStats span{background:#f4f7fb;border-radius:10px;padding:9px;font-size:11px;color:#637187}#endStats b{display:block;color:#172033;font-size:16px;margin-top:2px}.setting-row{border:1px solid #dbe4ef;border-radius:15px;background:white;padding:16px;margin:18px 0}.setting-row h3{margin:0 0 8px;font-size:16px}#tutorialArt svg{width:100%;height:140px}#tutorialStep{font-size:12px;color:#637187;font-weight:800;margin-bottom:10px}#tutorialTitle{font-size:22px}#tutorialText{min-height:84px}#tutorialSkip{margin-top:6px;border:0;background:transparent;padding:10px;color:#637187;font:600 12px monospace}#tutorialScreen{z-index:35}
+@media(max-height:600px){.screen{padding:14px}.hero{height:82px}.orb{width:42px;height:42px}.card{padding:14px}.card h2{font-size:21px}#tutorialArt svg{height:95px}#tutorialText{min-height:0}#hud{height:80px}.brand{font-size:14px}#board{height:calc(100% - 80px)}#powerHint{top:82px}#powerBar{bottom:6px}#powerBar button{min-height:44px}}
+
+/* --- v1.2 retro pixel look --- */
+html,body{background:#18131f;color:#eadfbe;font-family:monospace}
+#game{background:#2a2238;border-radius:4px;border:4px solid #111827;box-shadow:0 0 0 4px #59677d,0 16px 0 #0b1020}
+#board{background:#8ea08f;image-rendering:pixelated}
+#hud,.screen,.card{background:#e9dfc2;color:#172033}
+.brand,.badge,h1,h2,h3,.wide-button,.small-button,#menuBtn,#powerBar button,.level-card{font-family:monospace!important}
+.badge,.wide-button,.small-button,#menuBtn,#powerBar button,.level-card,.setting-row,.card{border-radius:4px!important;border:2px solid #172033;box-shadow:none}
+#hud{border-bottom:2px solid #172033}
+.orb{border-radius:4px;box-shadow:none}
+#comboToast{text-shadow:2px 2px 0 #fff}
+#endStars{letter-spacing:3px}
+
+</style>
+</head>
+<body>
+<div id="game">
+ <div id="playArea">
+  <div id="hud"><span class="brand">Шарики <span class="version">v1.2</span></span><button id="menuBtn" type="button" title="Пауза — Escape">Ⅱ Пауза</button><span id="modeLabel"></span><span class="score">Очки: <b id="score">0</b> · Рекорд: <b id="best">0</b> · <span id="counterLabel">Выстрелы</span>: <b id="misses">0</b></span></div>
+  <canvas id="board" aria-label="Цельтесь и отпускайте палец или кнопку мыши для выстрела."></canvas>
+  <div id="powerBar"><button id="bombBtn" type="button" aria-pressed="false" title="Взрыв: шар попадания и его соседи">✹ Бомба · 1</button><button id="rainbowBtn" type="button" aria-pressed="false" title="Принимает цвет самой большой соседней группы">✦ Радуга · 1</button><button id="swapBtn" type="button" title="Обмен — пробел">⇄ Обмен</button></div>
+  <div id="powerHint" aria-live="polite"></div><div id="saveStatus" role="status" hidden></div><div id="hint"></div><div id="comboToast" aria-live="polite"></div>
+ </div>
+ <section id="homeScreen" class="screen" aria-label="Главное меню">
+  <div class="head"><h1>Шарики</h1><span class="badge">v1.2</span></div><p class="sub">Маленький выстрел.<br>Большой каскад.</p>
+  <div class="hero" aria-hidden="true"><span class="orb" style="--c:#ef4444"></span><span class="orb" style="--c:#3b82f6"></span><span class="orb" style="--c:#22c55e"></span></div>
+  <div id="homeProgress"></div><button id="continueBtn" class="wide-button" type="button" hidden>Продолжить партию →</button><div id="continueInfo"></div>
+  <button id="levelsBtn" class="wide-button" type="button">Карта уровней</button><button id="endlessBtn" class="wide-button secondary" type="button">∞ Бесконечный режим</button><button id="settingsBtn" class="wide-button secondary" type="button">Настройки и обучение</button>
+  <p class="muted">Удерживай, целься и отпускай. Собирай группы одного цвета, сбрасывай оторванные шары и открывай новые уровни.</p><p id="homeNotice"></p>
+ </section>
+ <section id="mapScreen" class="screen" aria-label="Карта уровней" hidden><div class="head"><h2>Уровни</h2><button id="mapHomeBtn" class="small-button" type="button">Меню</button></div><div id="progressSummary"></div><button id="resumeBtn" class="wide-button" type="button" hidden>Продолжить партию</button><div id="levelGrid"></div>
+  <details><summary>Правила и звёзды</summary><p>Очисти поле до окончания выстрелов. Новые ряды в уровнях не появляются.</p><p>★★★ — не больше 65% выстрелов; ★★ — не больше 85%; ★ — просто пройти. Порог округляется вверх. Обмен бесплатный. Бомба и радуга тратят по одному выстрелу.</p><p>По одному бонусу на попытку. Бомба удаляет шар попадания и его соседей. Радуга принимает цвет самой большой соседней группы; для удаления нужны 3 шара. Повторное нажатие отменяет выбор.</p><p>В бесконечном режиме после 5 выстрелов без удаления появляется новый ряд.</p></details><p id="storageNotice"></p>
+ </section>
+ <section id="settingsScreen" class="screen" aria-label="Настройки" hidden><div class="head"><h2>Настройки</h2><button id="settingsHomeBtn" class="small-button" type="button">Меню</button></div><div class="setting-row"><h3>Звук</h3><button id="soundToggle" class="wide-button secondary" type="button" aria-pressed="true">Звук включён</button><p id="audioNotice" class="muted"></p></div><div class="setting-row"><h3>Как играть</h3><p class="muted">Четыре коротких подсказки: прицел, группы, опоры и бонусы.</p><button id="helpBtn" class="wide-button secondary" type="button">Повторить обучение</button></div><p class="muted">Escape — пауза. Пробел — обмен шаров. При уходе со вкладки игра автоматически останавливается.</p><p class="muted">Партия и прогресс сохраняются на этом устройстве, в этом браузере. Новая игра заменяет текущую партию.</p></section>
+ <section id="pauseScreen" class="modal" role="dialog" aria-modal="true" aria-label="Пауза" hidden><div class="card"><h2>Пауза</h2><p id="pauseReason"></p><button id="unpauseBtn" class="wide-button" type="button">Продолжить →</button><button id="pauseRestartBtn" class="wide-button secondary" type="button">Начать попытку заново</button><button id="pauseHomeBtn" class="wide-button secondary" type="button">Главное меню</button><button id="pauseSound" class="small-button" type="button">Звук: вкл.</button></div></section>
+ <section id="tutorialScreen" class="modal" role="dialog" aria-modal="true" aria-label="Обучение" hidden><div class="card"><div id="tutorialStep"></div><h2 id="tutorialTitle"></h2><div id="tutorialArt"></div><p id="tutorialText"></p><button id="tutorialNext" class="wide-button" type="button">Далее →</button><button id="tutorialSkip" type="button">Пропустить обучение</button></div></section>
+ <section id="gameOver" class="modal" role="dialog" aria-modal="true" aria-label="Результат"><div class="card"><h2 id="endTitle"></h2><div id="endStars" hidden></div><p id="endMessage"></p><div id="endStats" hidden></div><p id="endAdvice"></p><button id="nextBtn" class="wide-button" type="button" hidden>Следующий уровень →</button><button id="restartBtn" class="wide-button secondary" type="button">Повторить уровень</button><button id="endMapBtn" class="wide-button secondary" type="button">Карта уровней</button></div></section>
+</div>
+<script>
+
+(() => {
+  const canvas = document.getElementById("board");
+  const ctx = canvas.getContext("2d");
+  const swapBtn = document.getElementById("swapBtn");
+  const bestEl = document.getElementById("best");
+  const W = 390, H = 680;
+  const el = id => document.getElementById(id);
+  const mapScreen = el("mapScreen"), levelGrid = el("levelGrid");
+  const bombBtn = el("bombBtn"), rainbowBtn = el("rainbowBtn");
+  let screen = "home", mode = "endless", levelIndex = 0, hasGame = false;
+  let shotsLeft = 0, selectedPower = null, inventory = {bomb:1,rainbow:1};
+  let storageOK = true;
+  const SAVE_KEY = "bubble-shooter-session-v1";
+  const SETTINGS_KEY = "bubble-shooter-settings-v1";
+  let settings = {sound:true,tutorialDone:false};
+  try {
+    const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "null");
+    if (saved) { settings.sound = saved.sound !== false; settings.tutorialDone = saved.tutorialDone === true; }
+  } catch {}
+  let paused = true, phase = "idle", flight = null, lastFrame = null;
+  let rngState = 1, colorBag = [], tutorialIndex = -1, tutorialReturn = "play";
+  let audioContext = null, audioMaster = null, audioUnavailable = false;
+  let view = {scale:1,x:0,y:0};
+
+  const LEVELS = [
+    {name:"Первая опора",shots:7,board:["..0011....", "..0..1....", ".022221...", "..2..2....", "...22....."]},
+    {name:"Развилка",shots:8,board:["..00..11..", "..0....1..", ".02222331.", "..2....3..", ".222..333."]},
+    {name:"Двойной срез",shots:9,board:["..001122..", "..0....2..", ".033..221.", "..33..11..", "...3..1..."]},
+    {name:"Тонкие связи",shots:9,board:["..001122..", "..0..1.2..", ".03344122.", "..3..4.2..", ".333.44..."]},
+    {name:"Карманы",shots:10,board:["0011..2233", "0..1..2..3", "0441..2233", ".44..22.3.", "..4....33."]},
+    {name:"Подвесной мост",shots:11,board:["000....111", ".0......1.", ".022..331.", ".244..334.", "..244433..", "...4..3..."]},
+    {name:"Пятый цвет",shots:11,board:["0011..2233", "0.11..2.33", "0441..2233", ".44..22.3.", "..4.11.3.."]},
+    {name:"Боковые карманы",shots:12,board:[".00112233.", ".0..1..3..", "2441113332", "2..4..4..2", ".222..333."]},
+    {name:"Крепость",shots:12,board:["0011223344", "0..1..3..4", "0221123334", ".2.4..4.3.", "2244444333", ".2......3."]},
+    {name:"Финальный каскад",shots:13,board:["0011223344", "0..1..3..4", "0221123334", ".244..433.", "2244004433", ".2.0..4.3.", "..200044.."]}
+  ];
+  let progress = {stars:Array(10).fill(0),scores:Array(10).fill(0)};
+  try {
+    const saved = JSON.parse(localStorage.getItem("bubble-shooter-progress-v1") || "null");
+    if (saved && Array.isArray(saved.stars)) {
+      progress.stars = progress.stars.map((_,i) => Number.isInteger(saved.stars[i]) ? Math.max(0,Math.min(3,saved.stars[i])) : 0);
+      progress.scores = progress.scores.map((_,i) => Number.isFinite(saved.scores?.[i]) ? Math.max(0,saved.scores[i]) : 0);
+    }
+  } catch { storageOK = false; }
+  function saveProgress() {
+    try { localStorage.setItem("bubble-shooter-progress-v1",JSON.stringify(progress)); }
+    catch { storageOK = false; }
+  }
+  function unlockedCount() {
+    let n = 1;
+    while (n < LEVELS.length && progress.stars[n-1] > 0) n++;
+    return n;
+  }
+  function starsFor(shots, limit) {
+    return shots <= Math.ceil(limit*.65) ? 3 : shots <= Math.ceil(limit*.85) ? 2 : 1;
+  }
+
+  let best = 0;
+  try { const loadedBest=Number(localStorage.getItem("bubble-shooter-best")); best=Number.isFinite(loadedBest)?Math.max(0,loadedBest):0; } catch { storageOK = false; }
+  let parity = 0, effects = [], effectId = null, busy = false, activeShot = null, pointerId = null;
+  let floatTexts=[], trail=[], rowSlide=null, shake=0, dangerWarned=false;
+  let attemptStats={matchedBubbles:0,droppedBubbles:0,largestGroup:0,largestDrop:0,matchedShots:0,bombsUsed:0,rainbowsUsed:0};
+  const scoreEl = document.getElementById("score");
+  const missesEl = document.getElementById("misses");
+  const hintEl = document.getElementById("hint");
+  const gameOverEl = document.getElementById("gameOver");
+  const endTitleEl = document.getElementById("endTitle");
+  const endMessageEl = document.getElementById("endMessage");
+  const restartBtn = document.getElementById("restartBtn");
+  const comboToastEl = document.getElementById("comboToast");
+
+  const COLORS = ["#ef4444", "#3b82f6", "#22c55e", "#f59e0b", "#a855f7"];
+  const R = 17;
+  const GAP = 2;
+  const STEP = R * 2 + GAP;
+  const ROW_H = STEP * Math.sqrt(3) / 2;
+
+  let cols = 10;
+  let rows = 30;
+  let bubbles = [];
+  let shooter = null;
+  let nextColor = COLORS[2];
+  let pointer = { x: 0, y: 0 };
+  let animationId = null;
+  let score = 0;
+  let shotCount = 0;
+  let missesLeft = 5;
+  let gameOver = false;
+  let combo = 0;
+  let toastTimer = null;
+  const MAX_MISSES = 5;
+
+  const key = (row, col) => `${row}:${col}`;
+
+  function cellPosition(row, col) {
+    return {
+      x: R + col * STEP + ((row + parity) % 2 ? STEP / 2 : 0),
+      y: 34 + row * ROW_H
+    };
+  }
+
+  function isValidCell(row, col) {
+    if (row < 0 || col < 0 || row >= rows || col >= cols) return false;
+    const p = cellPosition(row, col);
+    const rect = {width: W, height: H};
+    return p.x + R <= rect.width + 0.5;
+  }
+
+  function occupied(row, col) {
+    return bubbles.some(b => b.row === row && b.col === col);
+  }
+
+  function bubbleAt(row, col) {
+    return bubbles.find(b => b.row === row && b.col === col);
+  }
+
+  function resize() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(rect.width*dpr);
+    canvas.height = Math.round(rect.height*dpr);
+    view.scale = Math.min(rect.width/W,rect.height/H);
+    view.x = (rect.width-W*view.scale)/2;
+    view.y = (rect.height-H*view.scale)/2;
+    ctx.setTransform(dpr*view.scale,0,0,dpr*view.scale,dpr*view.x,dpr*view.y);
+    ctx.imageSmoothingEnabled = false;
+    draw();
+  }
+
+  function createBoard() {
+    parity = 0;
+    bubbles = [];
+    if (mode === "levels") {
+      LEVELS[levelIndex].board.forEach((line,row) => {
+        [...line].forEach((color,col) => { if (color !== ".") addBubble(row,col,COLORS[Number(color)]); });
+      });
+    } else {
+      for (let row=0;row<5;row++) for (let col=0;col<cols;col++) {
+        if (isValidCell(row,col)) addBubble(row,col,COLORS[(row*3+col)%COLORS.length]);
+      }
+    }
+  }
+
+  function setupShooter() {
+    const rect = {width: W, height: H};
+    shooter = {
+      x: rect.width / 2,
+      y: rect.height - 104,
+      color: COLORS[1]
+    };
+    pointer.x = shooter.x;
+    pointer.y = shooter.y - 140;
+  }
+
+
+  function hexToRgb(hex) {
+    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return m ? {r:parseInt(m[1],16), g:parseInt(m[2],16), b:parseInt(m[3],16)} : {r:255,g:255,b:255};
+  }
+
+  function rgbToHex(r,g,b) {
+    return "#" + [r,g,b].map(v => Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,"0")).join("");
+  }
+
+  function adjustColor(hex, amount) {
+    const {r,g,b} = hexToRgb(hex);
+    return rgbToHex(r + 255 * amount, g + 255 * amount, b + 255 * amount);
+  }
+
+  function drawPixelBall(x, y, r, color) {
+    const px = 4;
+    const left = Math.floor((x - r) / px) * px;
+    const top = Math.floor((y - r) / px) * px;
+    for (let yy = top; yy <= y + r; yy += px) {
+      for (let xx = left; xx <= x + r; xx += px) {
+        const cx = xx + px / 2, cy = yy + px / 2;
+        const d = Math.hypot(cx - x, cy - y);
+        if (d <= r + .2) {
+          let shade = 0;
+          if (cx < x - r * .18 && cy < y - r * .18) shade = .22;
+          else if (cx > x + r * .2 || cy > y + r * .2) shade = -.18;
+          else if (d > r * .78) shade = -.1;
+          ctx.fillStyle = adjustColor(color, shade);
+          ctx.fillRect(xx, yy, px, px);
+        }
+      }
+    }
+    ctx.strokeStyle = "#172033";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(Math.round(x - r) + 1, Math.round(y - r) + 1, Math.round(r * 2) - 2, Math.round(r * 2) - 2);
+    ctx.fillStyle = "rgba(255,255,255,.85)";
+    ctx.fillRect(Math.round(x - r * .35), Math.round(y - r * .45), px + 1, px + 1);
+    ctx.fillRect(Math.round(x - r * .12), Math.round(y - r * .28), px, px);
+  }
+
+  function randomColor() {
+    return smartRandomColor();
+  }
+
+  function updateHud() {
+    scoreEl.textContent = score;
+    missesEl.textContent = mode === "levels" ? shotsLeft : missesLeft;
+    el("counterLabel").textContent = mode === "levels" ? "Выстрелы" : "До ряда";
+    el("modeLabel").textContent = mode === "levels" ? `${levelIndex+1}. ${LEVELS[levelIndex].name} · очисти поле` : "∞ Бесконечный режим";
+    const locked = busy || gameOver || paused || screen !== "play";
+    el("playArea").inert = gameOver || paused || screen !== "play";
+    bombBtn.disabled = locked || inventory.bomb === 0;
+    rainbowBtn.disabled = locked || inventory.rainbow === 0;
+    el("menuBtn").disabled = !hasGame || gameOver;
+    bombBtn.textContent = `✹ Бомба · ${inventory.bomb}`;
+    rainbowBtn.textContent = `✦ Радуга · ${inventory.rainbow}`;
+    bombBtn.setAttribute("aria-pressed",String(selectedPower === "bomb"));
+    rainbowBtn.setAttribute("aria-pressed",String(selectedPower === "rainbow"));
+    el("powerHint").textContent = selectedPower === "bomb" ? "Бомба: попадание + соседи · ещё раз — отмена" : selectedPower === "rainbow" ? "Радуга: лучший соседний цвет · ещё раз — отмена" : "";
+
+    if (score > best) {
+      best = score;
+      try { localStorage.setItem("bubble-shooter-best", String(best)); } catch { storageOK = false; }
+    }
+    bestEl.textContent = best;
+    swapBtn.disabled = locked || selectedPower !== null;
+    el("saveStatus").hidden=storageOK;
+    el("saveStatus").textContent=storageOK?"":"Не удалось сохранить партию в браузере";
+
+  }
+
+  function showToast(text) {
+    comboToastEl.textContent = text;
+    comboToastEl.classList.add("show");
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      comboToastEl.classList.remove("show");
+    }, 850);
+  }
+
+  function availableColors() {
+    const used = [...new Set(bubbles.map(b => b.color))];
+    return used.length ? used : COLORS;
+  }
+
+  function gameRandom() {
+    rngState = (Math.imul(rngState,1664525)+1013904223)>>>0;
+    return rngState/4294967296;
+  }
+
+  function smartRandomColor() {
+    const palette = availableColors();
+    colorBag = colorBag.filter(color=>palette.includes(color));
+    if (!colorBag.length) {
+      colorBag = COLORS.filter(color=>palette.includes(color));
+      for (let i=colorBag.length-1;i>0;i--) {
+        const j=Math.floor(gameRandom()*(i+1));
+        [colorBag[i],colorBag[j]]=[colorBag[j],colorBag[i]];
+      }
+    }
+    return colorBag.pop();
+  }
+
+  function addPenaltyRow() {
+    // Меняем чётность сетки: при опускании шары сохраняют x и связи.
+    parity = 1 - parity;
+    // Сдвигаем существующие шары на одну строку вниз.
+    for (const b of bubbles) {
+      b.row += 1;
+      const p = cellPosition(b.row, b.col);
+      b.x = p.x;
+      b.y = p.y;
+    }
+
+    // Добавляем новый верхний ряд.
+    for (let col = 0; col < cols; col++) {
+      if (!isValidCell(0, col)) continue;
+
+      addBubble(0, col, randomColor());
+    }
+
+    showToast("⚠ Новый ряд");
+    sound("row");
+    rowSlide={age:0,life:.32,offset:ROW_H};
+
+    missesLeft = MAX_MISSES;
+    updateHud();
+    checkGameOver();
+  }
+
+  function endGame(won, reason = "") {
+    gameOver = true;
+    sound(won ? "win" : "lose");
+    paused = true;
+    phase = "idle"; flight=null; activeShot=null; busy=false;
+    if (animationId) cancelAnimationFrame(animationId);
+    animationId=null;lastFrame=null;
+    selectedPower = null;
+    try { localStorage.removeItem(SAVE_KEY); } catch { storageOK=false; }
+
+    el("endStars").hidden = !won || mode !== "levels";
+    el("nextBtn").hidden = !won || mode !== "levels";
+    if (won && mode === "levels") {
+      const stars = starsFor(shotCount,LEVELS[levelIndex].shots);
+      progress.stars[levelIndex] = Math.max(progress.stars[levelIndex],stars);
+      progress.scores[levelIndex] = Math.max(progress.scores[levelIndex],score);
+      saveProgress();
+      endTitleEl.textContent = levelIndex === 9 ? "Все уровни пройдены!" : "Уровень пройден!";
+      el("endStars").textContent = "★".repeat(stars)+"☆".repeat(3-stars);
+      endMessageEl.textContent = `${score} очков · ${shotCount} из ${LEVELS[levelIndex].shots} выстрелов.`;
+      const target = stars===1 ? Math.ceil(LEVELS[levelIndex].shots*.85) : Math.ceil(LEVELS[levelIndex].shots*.65);
+      el("endAdvice").textContent = stars===3 ? "Три звезды! Можно перейти дальше или улучшить счёт." : `Для ${stars===1?"двух":"трёх"} звёзд пройди за ${target} выстрелов или меньше — на ${shotCount-target} меньше, чем сейчас.`;
+      el("nextBtn").textContent = levelIndex === 9 ? "На карту" : "Следующий уровень →";
+    } else {
+      endTitleEl.textContent = won ? "Поле очищено!" : "Попробуем ещё?";
+      endMessageEl.textContent = `${reason}${reason ? " · " : ""}Счёт: ${score}`;
+      el("endAdvice").textContent = won ? "Отличная партия! Попробуем побить рекорд?" : "Ищи опоры: убрав верхнюю группу, можно сбросить несколько нижних сразу.";
+    }
+    if (!storageOK) endMessageEl.textContent += " Сохранение недоступно в этом браузере.";
+    const statBox=el("endStats");
+    statBox.hidden=false;
+    const efficiency=shotCount?Math.round(attemptStats.matchedShots/shotCount*100):0;
+    statBox.innerHTML=`<span>Очки<b>${score}</b></span><span>Выстрелы<b>${shotCount}</b></span><span>Сброшено<b>${attemptStats.droppedBubbles}</b></span><span>Лучший обвал<b>${attemptStats.largestDrop}</b></span><span>Большая группа<b>${attemptStats.largestGroup}</b></span><span>Результативность<b>${efficiency}%</b></span>`;
+    if(!won){
+      if(reason.includes("линии")) el("endAdvice").textContent="Опасная зона заполнена. Старайся срезать верхние опоры — нижние группы упадут целиком.";
+      else if(reason.includes("Выстрелы")) el("endAdvice").textContent="Лимит выстрелов исчерпан. Используй обмен, чтобы чаще собирать группы за один ход.";
+    }
+    restartBtn.textContent = mode === "levels" ? "Повторить уровень" : "Играть снова";
+    gameOverEl.classList.add("show");
+    updateHud();
+    renderHome();
+    (won && mode === "levels" ? el("nextBtn") : restartBtn).focus();
+  }
+
+  function checkGameOver() {
+    if (bubbles.some(b => b.y+R >= shooter.y-82)) { endGame(false,"Шары достигли линии"); return true; }
+    if (mode === "levels" && shotsLeft <= 0) { endGame(false,"Выстрелы закончились"); return true; }
+    return false;
+  }
+
+  function checkWin() {
+    if (bubbles.length) return false;
+    endGame(true);
+    return true;
+  }
+
+  function renderMap() {
+    const unlocked = unlockedCount();
+    el("progressSummary").textContent = `★ ${progress.stars.reduce((a,b)=>a+b,0)} / 30 · открыто ${unlocked} из 10`;
+    levelGrid.replaceChildren();
+    LEVELS.forEach((level,i) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "level-card";
+      button.disabled = i >= unlocked;
+      const stars = progress.stars[i];
+      button.title=`Три звезды: не больше ${Math.ceil(level.shots*.65)} выстрелов. Две: не больше ${Math.ceil(level.shots*.85)}.`;
+      button.innerHTML = `<span class="level-num">${i+1}${i>=unlocked ? " · закрыт" : ""}</span><span class="level-name">${level.name} · ${level.shots} выстр.</span><span class="stars">${"★".repeat(stars)}${"☆".repeat(3-stars)}</span>`;
+      button.setAttribute("aria-label",`Уровень ${i+1}: ${level.name}. ${stars} из 3 звёзд.${i>=unlocked ? " Сначала пройдите предыдущий." : ""}`);
+      button.addEventListener("click",()=>startLevel(i));
+      levelGrid.append(button);
+    });
+    el("resumeBtn").hidden = !hasGame || gameOver;
+    el("storageNotice").textContent = storageOK ? "Звёзды и текущая партия сохраняются в этом браузере." : "Сохранение недоступно: прогресс останется только до перезагрузки.";
+  }
+
+  function openMap() {
+    freeze(); showScreen("map"); renderMap(); saveGame();
+  }
+
+  function startLevel(i) {
+    if (!Number.isInteger(i) || i<0 || i>=unlockedCount()) return;
+    unlockAudio(); levelIndex=i; mode="levels";hasGame=true;
+    showScreen("play"); restartGame();
+    if(i===0 && !settings.tutorialDone) showTutorial("play");
+  }
+
+  function startEndless() {
+    unlockAudio();mode="endless";hasGame=true;
+    showScreen("play");restartGame();
+  }
+
+  function selectPower(type) {
+    if (busy || gameOver || paused || screen !== "play" || !inventory[type]) return;
+    unlockAudio();
+    selectedPower = selectedPower === type ? null : type;
+    pointerId = null;
+    updateHud(); draw(); saveGame();
+  }
+
+  function restartGame() {
+    if (animationId) {
+      cancelAnimationFrame(animationId);
+      animationId = null;
+    }
+
+    if (effectId) cancelAnimationFrame(effectId);
+    paused=false;phase="idle";flight=null;lastFrame=null;tutorialIndex=-1;
+    rngState=mode==="levels" ? (20261001+(levelIndex+1)*997)>>>0 : (Date.now()>>>0);
+    colorBag=[];
+    effectId = null;
+    effects = [];
+    floatTexts=[];trail=[];rowSlide=null;shake=0;dangerWarned=false;
+    attemptStats={matchedBubbles:0,droppedBubbles:0,largestGroup:0,largestDrop:0,matchedShots:0,bombsUsed:0,rainbowsUsed:0};
+    activeShot = null;
+    busy = false;
+    pointerId = null;
+    if (toastTimer) clearTimeout(toastTimer);
+    selectedPower = null;
+    inventory = {bomb:1,rainbow:1};
+    shotsLeft = mode === "levels" ? LEVELS[levelIndex].shots : Infinity;
+    score = 0;
+    shotCount = 0;
+    missesLeft = MAX_MISSES;
+    gameOver = false;
+    combo = 0;
+    gameOverEl.classList.remove("show");
+    el("nextBtn").hidden = true;
+    el("endStars").hidden = true;
+    el("endStats").hidden = true;
+    endTitleEl.textContent = "Игра окончена";
+    endMessageEl.innerHTML = 'Счёт: <b id="finalScore">0</b>';
+    comboToastEl.classList.remove("show");
+
+    createBoard();
+    setupShooter();
+    shooter.color = randomColor();
+    nextColor = randomColor();
+    updateHud();
+    draw();
+    saveGame();
+  }
+
+  function drawBubble(b) {
+    if (b.power) {
+      ctx.save();
+      ctx.shadowBlur=12;ctx.shadowColor=b.power === "bomb" ? "#f59e0b" : "#a855f7";
+      if (b.power === "rainbow") {
+        for (let i=0;i<COLORS.length;i++) {
+          ctx.beginPath(); ctx.moveTo(b.x,b.y);
+          ctx.arc(b.x,b.y,R,i*Math.PI*2/5,(i+1)*Math.PI*2/5);
+          ctx.closePath(); ctx.fillStyle=COLORS[i];ctx.fill();
+        }
+      } else {
+        ctx.fillStyle="#172033";ctx.beginPath();ctx.arc(b.x,b.y,R,0,Math.PI*2);ctx.fill();
+      }
+      ctx.fillStyle="#f8fafc";ctx.font="bold 21px monospace";ctx.textAlign="center";ctx.textBaseline="middle";
+      ctx.fillText(b.power === "bomb" ? "✹" : "✦",b.x,b.y);
+      ctx.restore(); return;
+    }
+    drawPixelBall(b.x, b.y, R, b.color);
+  }
+
+  function aimAngle() {
+    return Math.max(-Math.PI + .12, Math.min(-.12,
+      Math.atan2(pointer.y - shooter.y, pointer.x - shooter.x)));
+  }
+
+  // Один расчёт пути для подсказки и выстрела. Пересечение луча с окружностями.
+  function traceAim(angle) {
+    let x = shooter.x, y = shooter.y;
+    let vx = Math.cos(angle), vy = Math.sin(angle);
+    const points = [{x,y}];
+    for (let bounce = 0; bounce < 40; bounce++) {
+      let distance = (34 - y) / vy;
+      let hitBubble = null;
+      let wall = false;
+      const wallDistance = Math.abs(vx) < 1e-9 ? Infinity :
+        ((vx > 0 ? W - R : R) - x) / vx;
+      if (wallDistance >= 0 && wallDistance < distance) {
+        distance = wallDistance;
+        wall = true;
+      }
+      for (const b of bubbles) {
+        const dx = x - b.x, dy = y - b.y;
+        const projection = dx * vx + dy * vy;
+        const discriminant = projection * projection - (dx*dx + dy*dy - (2*R)**2);
+        if (discriminant < 0) continue;
+        const t = -projection - Math.sqrt(discriminant);
+        if (t >= -1e-7 && t <= distance) {
+          distance = Math.max(0,t);
+          hitBubble = b;
+          wall = false;
+        }
+      }
+      x += vx * distance;
+      y += vy * distance;
+      points.push({x,y});
+      if (!wall) return {points, hitPoint:{x,y}, hitBubble};
+      vx = -vx;
+    }
+    return {points, hitPoint:null, hitBubble:null};
+  }
+
+  function drawAimGuide(angle) {
+    const trace = traceAim(angle);
+
+    ctx.save();
+
+    let distanceSoFar = 0;
+    for (let i = 1; i < trace.points.length; i++) {
+      const a = trace.points[i-1], b = trace.points[i];
+      const length = Math.hypot(b.x-a.x,b.y-a.y);
+      for (let d = 14; d < length; d += 22) {
+        ctx.beginPath();
+        ctx.arc(a.x+(b.x-a.x)*d/length,a.y+(b.y-a.y)*d/length,2.2,0,Math.PI*2);
+        ctx.fillStyle = `rgba(17,24,39,${Math.max(.13,.42-(distanceSoFar+d)/3000)})`;
+        ctx.fill();
+      }
+      distanceSoFar += length;
+    }
+
+    // Маркер предполагаемой точки столкновения.
+    if (trace.hitPoint) {
+      ctx.beginPath();
+      ctx.arc(trace.hitPoint.x, trace.hitPoint.y, 5.5, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(17,24,39,.5)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    if (selectedPower === "bomb" && trace.hitPoint) {
+      const center = trace.hitBubble || trace.hitPoint;
+      ctx.beginPath();ctx.arc(center.x,center.y,STEP+R,0,Math.PI*2);
+      ctx.fillStyle="rgba(245,158,11,.16)";ctx.fill();
+      ctx.strokeStyle="#c88712";ctx.lineWidth=2;ctx.stroke();
+      ctx.restore();return;
+    }
+    // Показываем не только столкновение, но и точную ячейку,
+    // в которую шар будет установлен после выстрела.
+    if (trace.hitPoint) {
+      const landingCell = findNearestEmptyCell(
+        trace.hitPoint.x,
+        trace.hitPoint.y,
+        trace.hitBubble
+      );
+
+      if (landingCell) {
+        const landing = cellPosition(landingCell.row, landingCell.col);
+        ctx.globalAlpha = .38;
+        drawBubble({ x: landing.x, y: landing.y, color: shooter.color, power:selectedPower });
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.arc(landing.x, landing.y, R + 3, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(17,24,39,.62)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    }
+
+    ctx.restore();
+  }
+
+  function drawShooter() {
+    if (!shooter) return;
+
+    const angle = aimAngle();
+    if (!busy && !gameOver && !paused && screen === "play") drawAimGuide(angle);
+
+    ctx.save();
+    ctx.translate(shooter.x, shooter.y);
+    ctx.rotate(angle + Math.PI / 2);
+    ctx.lineCap = "round";
+    ctx.lineWidth = 10;
+    ctx.strokeStyle = "#111827";
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, -30);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.beginPath();
+    ctx.arc(shooter.x, shooter.y, 24, 0, Math.PI * 2);
+    ctx.fillStyle = "#374151";
+    ctx.fill();
+
+    if (!activeShot) drawBubble({ x: shooter.x, y: shooter.y, color: shooter.color, power:selectedPower });
+
+    ctx.fillStyle = "#6b7280";
+    ctx.font = "12px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("Следующий", 68, shooter.y + 27);
+    drawBubble({ x: 68, y: shooter.y - 2, color: nextColor });
+  }
+
+  function draw() {
+    const rect = {width: W, height: H};
+    ctx.clearRect(0, 0, rect.width, rect.height);
+
+    ctx.fillStyle = "#e5e7eb";
+    ctx.fillRect(0, 0, rect.width, rect.height);
+
+    ctx.strokeStyle = "rgba(255,255,255,.45)";
+    ctx.lineWidth = 1;
+    for (let x = 0; x < rect.width; x += 32) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, rect.height);
+      ctx.stroke();
+    }
+    for (let y = 0; y < rect.height; y += 32) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(rect.width, y);
+      ctx.stroke();
+    }
+
+    const dangerY=shooter.y-82;
+    const nearest=bubbles.length?Math.max(...bubbles.map(b=>b.y+R)):0;
+    const danger=Math.max(0,Math.min(1,(nearest-(dangerY-115))/115));
+    ctx.save();
+    ctx.setLineDash([6,6]);ctx.lineWidth=1+danger*2;
+    const pulse=.55+.35*Math.sin(performance.now()/130);
+    ctx.strokeStyle=`rgba(239,68,68,${.35+danger*(.35+pulse*.25)})`;
+    ctx.beginPath();ctx.moveTo(0,dangerY);ctx.lineTo(W,dangerY);ctx.stroke();
+    if(danger>.72){ctx.fillStyle=`rgba(185,28,28,${.55+pulse*.35})`;ctx.font="900 13px monospace";ctx.textAlign="center";ctx.fillText("⚠ ОПАСНО",W/2,dangerY+20);}
+    ctx.restore();
+    const slideOffset=rowSlide ? -rowSlide.offset*(1-Math.min(1,rowSlide.age/rowSlide.life)) : 0;
+    ctx.save();ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake+slideOffset);
+    bubbles.forEach(drawBubble);ctx.restore();
+    drawShooter();
+    if(activeShot){
+      for(let i=0;i<trail.length;i++){const t=trail[i];ctx.save();ctx.globalAlpha=(i+1)/trail.length*.24;ctx.fillStyle=activeShot.color;ctx.beginPath();ctx.arc(t.x,t.y,2+i/trail.length*3,0,Math.PI*2);ctx.fill();ctx.restore();}
+      drawBubble(activeShot);
+    }
+    for(const f of floatTexts){ctx.save();ctx.globalAlpha=Math.max(0,1-f.age/f.life);ctx.fillStyle=f.drop?"#b45309":"#172033";ctx.font=f.big?"900 21px monospace":"900 16px monospace";ctx.textAlign="center";ctx.fillText(f.text,f.x,f.y);ctx.restore();}
+    for (const e of effects) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, 1-e.age/e.life);
+      if (e.type === "fall") drawBubble(e);
+      else {
+        ctx.fillStyle = e.color;
+        ctx.beginPath(); ctx.arc(e.x,e.y,3.5,0,Math.PI*2); ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+
+  function pointerPosition(e) {
+    const rect=canvas.getBoundingClientRect();
+    return {x:(e.clientX-rect.left-view.x)/view.scale,y:(e.clientY-rect.top-view.y)/view.scale};
+  }
+  function updatePointer(e) {
+    const p=pointerPosition(e);
+    pointer.x=p.x;pointer.y=Math.min(p.y,shooter.y-20);
+    draw();
+  }
+
+  function neighbors(row, col) {
+    // Шесть соседей для hex-сетки.
+    const even = (row + parity) % 2 === 0;
+    const offsets = even
+      ? [[0,-1],[0,1],[-1,-1],[-1,0],[1,-1],[1,0]]
+      : [[0,-1],[0,1],[-1,0],[-1,1],[1,0],[1,1]];
+
+    return offsets
+      .map(([dr, dc]) => [row + dr, col + dc])
+      .filter(([r,c]) => isValidCell(r,c));
+  }
+
+  function findNearestEmptyCell(x, y, hitBubble) {
+    if (!hitBubble) {
+      // Попадание в верхнюю границу.
+      let best = null;
+      let bestDist = Infinity;
+      for (let col = 0; col < cols; col++) {
+        const p = cellPosition(0, col);
+        if (!isValidCell(0,col) || occupied(0,col)) continue;
+        const d = Math.hypot(x - p.x, y - p.y);
+        if (d < bestDist) {
+          bestDist = d;
+          best = { row: 0, col };
+        }
+      }
+      return best;
+    }
+
+    const candidates = neighbors(hitBubble.row, hitBubble.col)
+      .filter(([r,c]) => !occupied(r,c));
+
+    let best = null;
+    let bestDist = Infinity;
+
+    for (const [r,c] of candidates) {
+      const p = cellPosition(r,c);
+      const d = Math.hypot(x - p.x, y - p.y);
+      if (d < bestDist) {
+        bestDist = d;
+        best = { row: r, col: c };
+      }
+    }
+    if (best) return best;
+
+    // Редкий пограничный случай: все шесть соседей точки столкновения заняты.
+    // Ищем ближайшую свободную ячейку, которая соединена с потолком или шарами.
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        if (!isValidCell(row, col) || occupied(row, col)) continue;
+        const attached = row === 0 ||
+          neighbors(row, col).some(([r,c]) => occupied(r,c));
+        if (!attached) continue;
+
+        const p = cellPosition(row, col);
+        const d = Math.hypot(x - p.x, y - p.y);
+        if (d < bestDist) {
+          bestDist = d;
+          best = { row, col };
+        }
+      }
+    }
+    return best;
+  }
+
+  function findCollision(projectile) {
+    let hit = null;
+    let min = Infinity;
+
+    for (const b of bubbles) {
+      const d = Math.hypot(projectile.x - b.x, projectile.y - b.y);
+      if (d <= R * 2 - 1 && d < min) {
+        min = d;
+        hit = b;
+      }
+    }
+    return hit;
+  }
+
+  function addBubble(row, col, color) {
+    const p = cellPosition(row, col);
+    bubbles.push({ row, col, x: p.x, y: p.y, color });
+  }
+
+  function sameColorGroup(start) {
+    const target = bubbleAt(start.row, start.col);
+    if (!target) return [];
+
+    const found = [];
+    const queue = [target];
+    const visited = new Set([key(target.row, target.col)]);
+
+    while (queue.length) {
+      const b = queue.shift();
+      found.push(b);
+
+      for (const [r,c] of neighbors(b.row, b.col)) {
+        const k = key(r,c);
+        const n = bubbleAt(r,c);
+        if (n && n.color === target.color && !visited.has(k)) {
+          visited.add(k);
+          queue.push(n);
+        }
+      }
+    }
+    return found;
+  }
+
+  function removeFloating() {
+    const connected = new Set();
+    const queue = [];
+
+    for (const b of bubbles) {
+      if (b.row === 0) {
+        connected.add(key(b.row,b.col));
+        queue.push(b);
+      }
+    }
+
+    while (queue.length) {
+      const b = queue.shift();
+      for (const [r,c] of neighbors(b.row,b.col)) {
+        const n = bubbleAt(r,c);
+        const k = key(r,c);
+        if (n && !connected.has(k)) {
+          connected.add(k);
+          queue.push(n);
+        }
+      }
+    }
+
+    const floating = bubbles.filter(b => !connected.has(key(b.row,b.col)));
+    floating.forEach(b => effects.push({...b,type:"fall",vx:(Math.random()-.5)*80,vy:50,age:0,life:1}));
+    bubbles = bubbles.filter(b => connected.has(key(b.row,b.col)));
+    return floating.length;
+  }
+
+  function resolveMatches(placed) {
+    const group = sameColorGroup(placed);
+    if (group.length >= 3) return clearGroup(group);
+    combo = 0;
+    return false;
+  }
+
+  function clearGroup(group) {
+    if (group.length) {
+      for (const b of group) {
+        for (let i=0;i<8;i++) {
+          const angle = i*Math.PI/4;
+          effects.push({x:b.x,y:b.y,color:b.color,type:"pop",vx:Math.cos(angle)*95,vy:Math.sin(angle)*95,age:0,life:.4});
+        }
+      }
+      const removed = new Set(group.map(b => key(b.row,b.col)));
+      bubbles = bubbles.filter(b => !removed.has(key(b.row,b.col)));
+
+      const floating = removeFloating();
+      sound(floating ? "fall" : (group.length>=6?"bigpop":"pop"));
+      combo += 1;
+      attemptStats.matchedBubbles+=group.length;attemptStats.droppedBubbles+=floating;
+      attemptStats.largestGroup=Math.max(attemptStats.largestGroup,group.length);attemptStats.largestDrop=Math.max(attemptStats.largestDrop,floating);
+      attemptStats.matchedShots++;
+      const cx=group.reduce((a,b)=>a+b.x,0)/group.length,cy=group.reduce((a,b)=>a+b.y,0)/group.length;
+      shake=Math.max(shake,floating>=6?7:group.length>=6?4:0);
+
+      const base = group.length * 10 + floating * 20;
+      const comboBonus = combo > 1 ? (combo - 1) * 25 : 0;
+      score += base + comboBonus;
+      floatTexts.push({x:cx,y:cy,text:`+${base+comboBonus}${floating?" · DROP":""}${combo>1?` · ×${combo}`:""}`,age:0,life:.9,big:floating>=4||combo>1,drop:floating>0});
+
+      if (floating > 0) {
+        showToast(`Падение! +${floating * 20}`);
+      } else if (combo > 1) {
+        showToast(`Комбо ×${combo}`);
+      }
+
+      updateHud();
+      return true;
+    }
+
+    combo = 0;
+    return false;
+  }
+
+  function resolveRainbow(cell) {
+    let color = shooter.color, biggest = -1;
+    for (const candidate of availableColors()) {
+      const placed = bubbleAt(cell.row,cell.col);
+      placed.color = candidate;
+      const count = sameColorGroup(cell).length;
+      if (count > biggest) { biggest = count; color = candidate; }
+    }
+    bubbleAt(cell.row,cell.col).color = color;
+    return resolveMatches(cell);
+  }
+
+  function finishShot(projectile, hitBubble) {
+    activeShot=null;flight=null;
+    let matched=false;
+    if (projectile.power === "bomb") {
+      const center=hitBubble || projectile;
+      matched=clearGroup(bubbles.filter(b=>Math.hypot(b.x-center.x,b.y-center.y)<=STEP+1));
+      if(!matched)showToast("Бомба не задела шары");
+    } else {
+      const cell=findNearestEmptyCell(projectile.x,projectile.y,hitBubble);
+      if(!cell){endGame(false,"Не осталось места для шара");draw();return;}
+      addBubble(cell.row,cell.col,projectile.color);
+      matched=projectile.power === "rainbow" ? resolveRainbow(cell) : resolveMatches(cell);
+    }
+    missesLeft=matched?MAX_MISSES:missesLeft-1;
+    phase="effects";
+    saveGame();
+    if(!effects.length) completeTurn();
+    updateHud();draw();
+  }
+
+  function completeTurn() {
+    phase="idle";busy=false;flight=null;
+    if(!checkWin()&&!checkGameOver()) {
+      if(mode === "endless" && missesLeft<=0) addPenaltyRow();
+      if(!gameOver){
+        const palette=availableColors();
+        shooter.color=palette.includes(nextColor)?nextColor:randomColor();
+        nextColor=randomColor();
+      }
+    }
+    updateHud();draw();saveGame();runAnimation();
+  }
+
+  function runAnimation() {
+    if(animationId || paused || screen!=="play" || gameOver || (phase==="idle"&&!rowSlide&&!floatTexts.length&&shake<=.1))return;
+    animationId=requestAnimationFrame(frame);
+  }
+
+  function frame(now) {
+    animationId=null;
+    if(paused || screen!=="play" || gameOver){lastFrame=null;return;}
+    const dt=lastFrame===null?0:Math.min(.04,Math.max(0,(now-lastFrame)/1000));
+    lastFrame=now;
+    if(activeShot){trail.push({x:activeShot.x,y:activeShot.y});if(trail.length>9)trail.shift();}
+    else trail=[];
+    for(const f of floatTexts){f.age+=dt;f.y-=24*dt;}floatTexts=floatTexts.filter(f=>f.age<f.life);
+    if(rowSlide){rowSlide.age+=dt;if(rowSlide.age>=rowSlide.life)rowSlide=null;}
+    shake*=Math.pow(.025,dt);
+    if(phase==="flight" && flight && activeShot) {
+      let distance=dt*520;
+      while(flight.segment<flight.points.length){
+        const target=flight.points[flight.segment];
+        const remaining=Math.hypot(target.x-activeShot.x,target.y-activeShot.y);
+        if(remaining>distance){
+          activeShot.x+=(target.x-activeShot.x)*distance/remaining;
+          activeShot.y+=(target.y-activeShot.y)*distance/remaining;
+          break;
+        }
+        activeShot.x=target.x;activeShot.y=target.y;distance-=remaining;flight.segment++;
+        if(flight.segment<flight.points.length)sound("bounce");
+      }
+      if(flight.segment===flight.points.length){
+        const hit=flight.hitCell?bubbleAt(flight.hitCell.row,flight.hitCell.col):null;
+        finishShot({...activeShot},hit);
+      }
+    } else if(phase==="effects"){
+      for(const e of effects){
+        e.age+=dt;e.vy+=(e.type==="fall"?1000:220)*dt;e.x+=e.vx*dt;e.y+=e.vy*dt;
+      }
+      effects=effects.filter(e=>e.age<e.life && e.y<H+R);
+      if(!effects.length)completeTurn();
+    }
+    draw();
+    if(phase==="idle"&&!rowSlide&&!floatTexts.length&&shake<=.1)lastFrame=null;
+    runAnimation();
+  }
+
+  function shoot() {
+    if(!shooter || busy || gameOver || paused || screen!=="play" || shotsLeft<=0)return;
+    const trace=traceAim(aimAngle());
+    if(!trace.hitPoint)return;
+    unlockAudio();sound("shoot");
+    busy=true;phase="flight";lastFrame=null;
+    activeShot={x:shooter.x,y:shooter.y,color:shooter.color,power:selectedPower};
+    flight={points:trace.points,segment:1,hitCell:trace.hitBubble?{row:trace.hitBubble.row,col:trace.hitBubble.col}:null};
+    if(selectedPower){inventory[selectedPower]--;if(selectedPower==="bomb")attemptStats.bombsUsed++;else if(selectedPower==="rainbow")attemptStats.rainbowsUsed++;sound("power");}
+    selectedPower=null;shotCount++;
+    if(mode==="levels")shotsLeft--;
+    updateHud();saveGame();runAnimation();
+  }
+
+  function swapColors() {
+    if (busy || gameOver || paused || screen !== "play" || selectedPower) return;
+    unlockAudio();
+    [shooter.color,nextColor] = [nextColor,shooter.color];
+    draw();saveGame();
+  }
+
+  function snapshot() {
+    return {
+      version:1,mode,levelIndex,parity,
+      bubbles:bubbles.map(({row,col,color})=>({row,col,color})),
+      color:shooter.color,nextColor,pointer:{...pointer},score,shotCount,missesLeft,
+      shotsLeft:mode==="levels"?shotsLeft:null,combo,inventory:{...inventory},selectedPower,
+      rngState,colorBag:[...colorBag],phase,activeShot:activeShot?{...activeShot}:null,
+      flight:flight?JSON.parse(JSON.stringify(flight)):null,effects:effects.map(e=>({...e})),
+      tutorialIndex,tutorialReturn
+    };
+  }
+
+  function saveGame() {
+    if(!hasGame || gameOver || !shooter)return;
+    try { localStorage.setItem(SAVE_KEY,JSON.stringify(snapshot())); }
+    catch { storageOK=false; }
+    el("saveStatus").hidden=storageOK;
+    el("saveStatus").textContent=storageOK?"":"Не удалось сохранить партию в браузере";
+  }
+
+  function validateSnapshot(s) {
+    const integer=(n,min,max)=>Number.isInteger(n)&&n>=min&&n<=max;
+    const num=(n,min,max)=>Number.isFinite(n)&&n>=min&&n<=max;
+    const point=p=>p&&num(p.x,-10000,10000)&&num(p.y,-10000,10000);
+    const power=p=>p===null||p==="bomb"||p==="rainbow";
+    if(!s || s.version!==1 || !["levels","endless"].includes(s.mode))return false;
+    if(!integer(s.levelIndex,0,9) || (s.mode==="levels" && s.levelIndex>=unlockedCount()) || !integer(s.parity,0,1))return false;
+    if(!Array.isArray(s.bubbles)||s.bubbles.length>300)return false;
+    const seen=new Set();
+    for(const b of s.bubbles){
+      if(!b || !integer(b.row,0,29)||!integer(b.col,0,9)||!COLORS.includes(b.color))return false;
+      const k=key(b.row,b.col);if(seen.has(k))return false;seen.add(k);
+    }
+    if(!COLORS.includes(s.color)||!COLORS.includes(s.nextColor)||!point(s.pointer))return false;
+    if(!integer(s.score,0,1e9)||!integer(s.shotCount,0,1e6)||!integer(s.combo,0,1e6)||!integer(s.missesLeft,0,5))return false;
+    if(s.mode==="levels" && (!integer(s.shotsLeft,0,LEVELS[s.levelIndex].shots)||s.shotCount+s.shotsLeft!==LEVELS[s.levelIndex].shots))return false;
+    if(s.mode==="endless" && s.shotsLeft!==null)return false;
+    if(!s.inventory || !integer(s.inventory.bomb,0,1)||!integer(s.inventory.rainbow,0,1)||!power(s.selectedPower))return false;
+    if(s.selectedPower&&!s.inventory[s.selectedPower])return false;
+    if(!integer(s.rngState,0,0xffffffff)||!Array.isArray(s.colorBag)||s.colorBag.length>5||s.colorBag.some(c=>!COLORS.includes(c)))return false;
+    if(!["idle","flight","effects"].includes(s.phase)||!Array.isArray(s.effects)||s.effects.length>3000)return false;
+    for(const e of s.effects){
+      if(!point(e)||!["pop","fall"].includes(e.type)||!COLORS.includes(e.color)||!num(e.age,0,2)||!num(e.life,.01,2)||!num(e.vx,-1e4,1e4)||!num(e.vy,-1e4,1e4))return false;
+    }
+    if(s.phase==="flight"){
+      if(!point(s.activeShot)||!COLORS.includes(s.activeShot.color)||!power(s.activeShot.power)||!s.flight)return false;
+      const f=s.flight;
+      if(!Array.isArray(f.points)||f.points.length<2||f.points.length>42||f.points.some(p=>!point(p))||!integer(f.segment,1,f.points.length-1))return false;
+      if(f.hitCell && !seen.has(key(f.hitCell.row,f.hitCell.col)))return false;
+      if(s.effects.length || !s.shotCount)return false;
+    } else if(s.activeShot!==null||s.flight!==null)return false;
+    if(s.phase==="idle" && (!s.bubbles.length || s.effects.length || (s.mode==="levels" && !s.shotsLeft)))return false;
+    if(!integer(s.tutorialIndex,-1,3)||!["play","home","settings"].includes(s.tutorialReturn))return false;
+    return true;
+  }
+
+  function restoreGame() {
+    let raw;
+    try { raw=localStorage.getItem(SAVE_KEY); }
+    catch { storageOK=false;return false; }
+    if(!raw)return false;
+    try {
+      const s=JSON.parse(raw);
+      if(!validateSnapshot(s))throw Error("Invalid session");
+      mode=s.mode;levelIndex=s.levelIndex;parity=s.parity;
+      bubbles=s.bubbles.map(b=>({...b,...cellPosition(b.row,b.col)}));
+      setupShooter();shooter.color=s.color;nextColor=s.nextColor;pointer={...s.pointer};
+      score=s.score;shotCount=s.shotCount;missesLeft=s.missesLeft;shotsLeft=s.mode==="levels"?s.shotsLeft:Infinity;
+      combo=s.combo;inventory={...s.inventory};selectedPower=s.selectedPower;
+      rngState=s.rngState;colorBag=[...s.colorBag];phase=s.phase;activeShot=s.activeShot;flight=s.flight;effects=s.effects;
+      tutorialIndex=s.tutorialIndex;tutorialReturn=s.tutorialReturn;
+      busy=phase!=="idle";hasGame=true;gameOver=false;paused=true;lastFrame=null;return true;
+    } catch {
+      el("homeNotice").textContent="Не удалось прочитать последнюю партию. Можно начать новую; звёзды и рекорд сохранены.";
+      return false;
+    }
+  }
+
+  function saveSettings() {
+    try {localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings));}catch {storageOK=false;}
+    renderSettings();
+  }
+
+  function unlockAudio() {
+    if(!settings.sound || audioUnavailable)return;
+    try {
+      if(!audioContext){
+        const Audio=window.AudioContext||window.webkitAudioContext;
+        if(!Audio){audioUnavailable=true;return;}
+        audioContext=new Audio();audioMaster=audioContext.createGain();audioMaster.connect(audioContext.destination);
+      }
+      audioMaster.gain.setValueAtTime(paused?0:1,audioContext.currentTime);
+      if(audioContext.state==="suspended")audioContext.resume().catch(()=>{});
+    }catch {audioUnavailable=true;}
+  }
+
+  function sound(name) {
+    if(!settings.sound || paused || !audioContext || audioContext.state!=="running")return;
+    const notes={shoot:[[420,0,.06]],bounce:[[740,0,.035]],pop:[[660,0,.07],[920,.04,.07]],bigpop:[[620,0,.06],[820,.035,.07],[1050,.07,.08]],power:[[520,0,.06],[780,.04,.09]],row:[[260,0,.09],[220,.07,.13]],fall:[[900,0,.08],[650,.07,.09],[400,.13,.1]],win:[[523,0,.14],[659,.13,.14],[784,.26,.23]],lose:[[330,0,.12],[220,.15,.2]]}[name]||[];
+    try {
+      for(const [freq,delay,duration] of notes){
+        const t=audioContext.currentTime+delay,osc=audioContext.createOscillator(),gain=audioContext.createGain();
+        osc.type="sine";osc.frequency.setValueAtTime(freq,t);gain.gain.setValueAtTime(.0001,t);
+        gain.gain.exponentialRampToValueAtTime(.075,t+.008);gain.gain.exponentialRampToValueAtTime(.0001,t+duration);
+        osc.connect(gain);gain.connect(audioMaster);osc.start(t);osc.stop(t+duration+.02);
+        osc.onended=()=>{osc.disconnect();gain.disconnect();};
+      }
+    }catch {}
+  }
+
+  function renderSettings() {
+    el("soundToggle").textContent=settings.sound?"Звук включён":"Звук выключен";
+    el("soundToggle").setAttribute("aria-pressed",String(settings.sound));
+    el("pauseSound").textContent=settings.sound?"Звук: вкл.":"Звук: выкл.";
+    el("audioNotice").textContent=audioUnavailable?"Этот браузер не поддерживает игровой звук.":"Настройка сохраняется. Звук включается после первого нажатия.";
+  }
+
+  function toggleSound() {
+    settings.sound=!settings.sound;saveSettings();
+    if(settings.sound)unlockAudio();
+    if(audioMaster)audioMaster.gain.setValueAtTime(settings.sound&&!paused?1:0,audioContext.currentTime);
+  }
+
+  function freeze() {
+    paused=true;pointerId=null;lastFrame=null;
+    if(animationId)cancelAnimationFrame(animationId);animationId=null;
+    if(audioMaster)audioMaster.gain.setValueAtTime(0,audioContext.currentTime);
+    if(toastTimer)clearTimeout(toastTimer);
+    comboToastEl.classList.remove("show");
+  }
+
+  function showScreen(target) {
+    screen=target;
+    for(const [id,name]of [["homeScreen","home"],["mapScreen","map"],["settingsScreen","settings"],["pauseScreen","pause"],["tutorialScreen","tutorial"]])el(id).hidden=target!==name;
+    gameOverEl.classList.toggle("show",target==="play"&&gameOver);
+    el("playArea").inert=target!=="play"||gameOver;
+    updateHud();
+  }
+
+  function renderHome() {
+    el("continueBtn").hidden=!hasGame||gameOver;
+    el("continueInfo").textContent=hasGame&&!gameOver ? (mode==="levels"?`Уровень ${levelIndex+1} · осталось ${shotsLeft} выстрелов`:`Бесконечный режим · ${score} очков`) : "";
+    el("homeProgress").textContent=`★ ${progress.stars.reduce((a,b)=>a+b,0)} / 30 · Рекорд: ${best}`;
+    if(!storageOK)el("homeNotice").textContent="Сохранение недоступно в этом браузере. Партия работает до закрытия страницы.";
+  }
+
+  function openHome() {
+    freeze();showScreen("home");saveGame();renderHome();
+  }
+
+  function pauseGame(reason="") {
+    if(!hasGame||gameOver||screen!=="play")return;
+    freeze();showScreen("pause");
+    el("pauseReason").textContent=reason||"Можно продолжить с того же места.";
+    renderSettings();saveGame();
+    if(!document.hidden)el("unpauseBtn").focus();
+  }
+
+  function resumeGame() {
+    if(!hasGame||gameOver)return;
+    if(tutorialIndex>=0){showScreen("tutorial");renderTutorial();return;}
+    showScreen("play");paused=false;lastFrame=null;
+    unlockAudio();updateHud();draw();saveGame();runAnimation();
+  }
+
+  const LESSONS=[
+    {title:"Прицелься и отпусти",text:"Удерживай палец или кнопку мыши на поле. Двигай прицел: полупрозрачный шар показывает место посадки. Отпусти — и шар полетит.",svg:'<path d="M140 118 L62 48" stroke="#637187" stroke-width="3" stroke-dasharray="5 8"/><circle cx="140" cy="118" r="18" fill="#3b82f6"/><circle cx="62" cy="48" r="18" fill="#3b82f6" fill-opacity=".3" stroke="#3b82f6"/>'},
+    {title:"Собери три одного цвета",text:"Когда выстрел соединяет три или больше соседних шаров одного цвета, вся группа лопается. За каждый удалённый шар начисляются очки.",svg:'<circle cx="95" cy="76" r="22" fill="#ef4444"/><circle cx="140" cy="76" r="22" fill="#ef4444"/><circle cx="185" cy="76" r="22" fill="#ef4444"/><text x="140" y="125" text-anchor="middle" font-size="18" fill="#637187">3+ → лоп!</text>'},
+    {title:"Убирай опоры",text:"Шары держатся за верх поля через соседей. Убери соединяющую группу — и всё, что осталось без опоры, упадёт. За падение даётся больше очков.",svg:'<path d="M45 20 H235" stroke="#94a3b8" stroke-width="4"/><circle cx="140" cy="41" r="17" fill="#ef4444"/><circle cx="122" cy="72" r="17" fill="#22c55e"/><circle cx="158" cy="72" r="17" fill="#3b82f6"/><path d="M122 100 V127 m-6 -6 l6 6 l6 -6 M158 100 V127 m-6 -6 l6 6 l6 -6" stroke="#637187" stroke-width="3" fill="none"/>'},
+    {title:"Обменивай и используй бонусы",text:"⇄ меняет текущий шар со следующим без траты выстрела. ✹ взрывает шар попадания и его соседей. ✦ подбирает соседний цвет. По одному бонусу на попытку; нажатие ещё раз отменяет выбор.",svg:'<circle cx="75" cy="76" r="24" fill="#172033"/><text x="75" y="84" text-anchor="middle" fill="white" font-size="27">✹</text><circle cx="140" cy="76" r="24" fill="#a855f7"/><text x="140" y="84" text-anchor="middle" fill="white" font-size="27">✦</text><text x="207" y="88" text-anchor="middle" fill="#172033" font-size="38">⇄</text>'}
+  ];
+
+  function renderTutorial() {
+    const lesson=LESSONS[Math.max(0,tutorialIndex)];
+    el("tutorialStep").textContent=`${tutorialIndex+1} / 4`;
+    el("tutorialTitle").textContent=lesson.title;el("tutorialText").textContent=lesson.text;
+    el("tutorialArt").innerHTML=`<svg viewBox="0 0 280 150" role="img" aria-label="${lesson.title}">${lesson.svg}</svg>`;
+    el("tutorialNext").textContent=tutorialIndex===3?"Понятно — начинаем!":"Далее →";
+  }
+
+  function showTutorial(returnTo) {
+    freeze();tutorialIndex=0;tutorialReturn=returnTo;showScreen("tutorial");renderTutorial();saveGame();
+  }
+
+  function finishTutorial() {
+    tutorialIndex=-1;settings.tutorialDone=true;saveSettings();
+    if(tutorialReturn==="play")resumeGame();
+    else {showScreen(tutorialReturn);saveGame();}
+  }
+
+  canvas.addEventListener("pointerdown",e=>{
+    if(busy||gameOver||paused||screen!=="play"||pointerId!==null||e.button!==0)return;
+    const p=pointerPosition(e);if(p.y>=shooter.y+20 || p.x<0||p.x>W)return;
+    unlockAudio();pointerId=e.pointerId;canvas.setPointerCapture(e.pointerId);updatePointer(e);
+  });
+  canvas.addEventListener("pointermove",e=>{
+    if(busy||gameOver||paused||screen!=="play"||(pointerId!==null&&pointerId!==e.pointerId))return;
+    updatePointer(e);
+  });
+  canvas.addEventListener("pointerup",e=>{
+    if(pointerId!==e.pointerId)return;pointerId=null;updatePointer(e);shoot();
+  });
+  canvas.addEventListener("pointercancel",()=>{pointerId=null;});
+  canvas.addEventListener("lostpointercapture",()=>{pointerId=null;});
+  swapBtn.addEventListener("click",swapColors);
+  bombBtn.addEventListener("click",()=>selectPower("bomb"));
+  rainbowBtn.addEventListener("click",()=>selectPower("rainbow"));
+  el("menuBtn").addEventListener("click",()=>pauseGame());
+  el("unpauseBtn").addEventListener("click",resumeGame);
+  el("continueBtn").addEventListener("click",resumeGame);
+  el("resumeBtn").addEventListener("click",resumeGame);
+  el("endMapBtn").addEventListener("click",openMap);
+  el("levelsBtn").addEventListener("click",openMap);
+  el("endlessBtn").addEventListener("click",startEndless);
+  el("settingsBtn").addEventListener("click",()=>{freeze();showScreen("settings");renderSettings();saveGame();});
+  for(const id of ["mapHomeBtn","settingsHomeBtn","pauseHomeBtn"])el(id).addEventListener("click",openHome);
+  for(const id of ["soundToggle","pauseSound"])el(id).addEventListener("click",toggleSound);
+  el("helpBtn").addEventListener("click",()=>showTutorial("settings"));
+  el("tutorialNext").addEventListener("click",()=>{if(tutorialIndex<3){tutorialIndex++;renderTutorial();saveGame();}else finishTutorial();});
+  el("tutorialSkip").addEventListener("click",finishTutorial);
+  for(const id of ["restartBtn","pauseRestartBtn"])el(id).addEventListener("click",()=>{showScreen("play");restartGame();unlockAudio();});
+  el("nextBtn").addEventListener("click",()=>{
+    if(mode!=="levels"||!gameOver)return;
+    if(levelIndex===9)openMap();else startLevel(levelIndex+1);
+  });
+  window.addEventListener("keydown",e=>{
+    if(e.code==="Escape" && !e.repeat){
+      e.preventDefault();if(screen==="play")pauseGame();else if(screen==="pause")resumeGame();
+    }
+    if(e.code==="Space" && e.target.tagName!=="BUTTON"){
+      e.preventDefault();if(!e.repeat)swapColors();
+    }
+  });
+  document.addEventListener("visibilitychange",()=>{
+    if(document.hidden){pauseGame("Пауза включена: ты перешёл в другую вкладку.");saveGame();}
+  });
+  window.addEventListener("pagehide",()=>{pauseGame();saveGame();});
+  window.addEventListener("resize",resize);
+  restartGame();
+  restoreGame();
+  freeze();showScreen("home");resize();renderMap();renderHome();renderSettings();
+})();
+</script>
+</body>
+</html>
