@@ -1,0 +1,831 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Bubble Shooter — MVP 0.5</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #111827;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  body { display: grid; place-items: center; }
+  #game {
+    width: min(92vw, 430px);
+    height: min(92vh, 760px);
+    background: #f3f4f6;
+    border-radius: 18px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    overflow: hidden;
+    position: relative;
+  }
+  #hud {
+    height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    font-weight: 700;
+    color: #111827;
+  }
+  #hud .score { font-size: 14px; color: #4b5563; }
+  #hud .version {
+    margin-left: 5px;
+    color: #9ca3af;
+    font-size: 11px;
+    font-weight: 800;
+  }
+  #board {
+    display: block;
+    width: 100%;
+    height: calc(100% - 58px);
+    touch-action: none;
+  }
+  .hint {
+    position: absolute;
+    left: 50%;
+    top: 70px;
+    transform: translateX(-50%);
+    color: #6b7280;
+    font-size: 13px;
+    pointer-events: none;
+    white-space: nowrap;
+    transition: opacity .3s;
+  }
+  .hint.hidden { opacity: 0; }
+
+  #gameOver {
+    position: absolute;
+    inset: 58px 0 0 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(17,24,39,.76);
+    z-index: 10;
+    padding: 24px;
+  }
+  #gameOver.show { display: flex; }
+  .gameover-card {
+    width: min(86%, 320px);
+    background: white;
+    border-radius: 18px;
+    padding: 24px;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0,0,0,.25);
+  }
+  .gameover-card h2 {
+    margin: 0 0 10px;
+    color: #111827;
+  }
+  .gameover-card p {
+    margin: 0 0 18px;
+    color: #4b5563;
+  }
+  #restartBtn {
+    border: 0;
+    border-radius: 12px;
+    padding: 12px 18px;
+    font: inherit;
+    font-weight: 800;
+    background: #111827;
+    color: white;
+    cursor: pointer;
+  }
+
+
+  #comboToast {
+    position: absolute;
+    left: 50%;
+    top: 88px;
+    transform: translateX(-50%) translateY(-6px);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 6;
+    font-weight: 900;
+    font-size: 20px;
+    color: #111827;
+    text-shadow: 0 2px 8px rgba(255,255,255,.9);
+    transition: opacity .18s ease, transform .18s ease;
+  }
+  #comboToast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+</style>
+</head>
+<body>
+<div id="game">
+  <div id="hud">
+    <span>🫧 Bubble Shooter <span class="version">v0.5</span></span>
+    <span class="score">Очки: <b id="score">0</b> · До ряда: <b id="misses">5</b></span>
+  </div>
+  <canvas id="board"></canvas>
+  <div class="hint hidden" id="hint"></div>
+  <div id="comboToast"></div>
+  <div id="gameOver">
+    <div class="gameover-card">
+      <h2 id="endTitle">Игра окончена</h2>
+      <p id="endMessage">Счёт: <b id="finalScore">0</b></p>
+      <button id="restartBtn" type="button">Играть снова</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById("board");
+  const ctx = canvas.getContext("2d");
+  const scoreEl = document.getElementById("score");
+  const missesEl = document.getElementById("misses");
+  const hintEl = document.getElementById("hint");
+  const gameOverEl = document.getElementById("gameOver");
+  const endTitleEl = document.getElementById("endTitle");
+  const endMessageEl = document.getElementById("endMessage");
+  const restartBtn = document.getElementById("restartBtn");
+  const comboToastEl = document.getElementById("comboToast");
+
+  const COLORS = ["#ef4444", "#3b82f6", "#22c55e", "#f59e0b", "#a855f7"];
+  const R = 17;
+  const GAP = 2;
+  const STEP = R * 2 + GAP;
+  const ROW_H = STEP * 0.866;
+
+  let cols = 10;
+  let rows = 30;
+  let bubbles = [];
+  let shooter = null;
+  let nextColor = COLORS[2];
+  let pointer = { x: 0, y: 0 };
+  let animationId = null;
+  let score = 0;
+  let shotCount = 0;
+  let missesLeft = 5;
+  let gameOver = false;
+  let combo = 0;
+  let toastTimer = null;
+  const MAX_MISSES = 5;
+
+  const key = (row, col) => `${row}:${col}`;
+
+  function cellPosition(row, col) {
+    return {
+      x: R + col * STEP + (row % 2 ? R : 0),
+      y: 34 + row * ROW_H
+    };
+  }
+
+  function isValidCell(row, col) {
+    if (row < 0 || col < 0 || row >= rows || col >= cols) return false;
+    const p = cellPosition(row, col);
+    const rect = canvas.getBoundingClientRect();
+    return p.x + R <= rect.width + 0.5;
+  }
+
+  function occupied(row, col) {
+    return bubbles.some(b => b.row === row && b.col === col);
+  }
+
+  function bubbleAt(row, col) {
+    return bubbles.find(b => b.row === row && b.col === col);
+  }
+
+  function resize() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    cols = Math.max(7, Math.floor((rect.width - R * 2 - GAP) / STEP) + 1);
+
+    if (!bubbles.length) {
+      createBoard();
+    } else {
+      for (const b of bubbles) {
+        const p = cellPosition(b.row, b.col);
+        b.x = p.x;
+        b.y = p.y;
+      }
+    }
+
+    setupShooter();
+    draw();
+  }
+
+  function createBoard() {
+    bubbles = [];
+    for (let row = 0; row < 5; row++) {
+      for (let col = 0; col < cols; col++) {
+        if (!isValidCell(row, col)) continue;
+        bubbles.push({
+          row,
+          col,
+          ...cellPosition(row, col),
+          color: COLORS[(row * 3 + col) % COLORS.length]
+        });
+      }
+    }
+  }
+
+  function setupShooter() {
+    const rect = canvas.getBoundingClientRect();
+    shooter = {
+      x: rect.width / 2,
+      y: rect.height - 104,
+      color: COLORS[1]
+    };
+    pointer.x = shooter.x;
+    pointer.y = shooter.y - 140;
+  }
+
+  function randomColor() {
+    return smartRandomColor();
+  }
+
+  function updateHud() {
+    scoreEl.textContent = score;
+    missesEl.textContent = missesLeft;
+  }
+
+  function showToast(text) {
+    comboToastEl.textContent = text;
+    comboToastEl.classList.add("show");
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      comboToastEl.classList.remove("show");
+    }, 850);
+  }
+
+  function availableColors() {
+    const used = [...new Set(bubbles.map(b => b.color))];
+    return used.length ? used : COLORS;
+  }
+
+  function smartRandomColor() {
+    const palette = availableColors();
+    return palette[Math.floor(Math.random() * palette.length)];
+  }
+
+  function addPenaltyRow() {
+    // Сдвигаем существующие шары на одну строку вниз.
+    for (const b of bubbles) {
+      b.row += 1;
+      const p = cellPosition(b.row, b.col);
+      b.x = p.x;
+      b.y = p.y;
+    }
+
+    // Добавляем новый верхний ряд.
+    for (let col = 0; col < cols; col++) {
+      if (!isValidCell(0, col)) continue;
+      // Иногда оставляем небольшое отверстие, чтобы ряд не выглядел слишком "стеной".
+      if (Math.random() < 0.12) continue;
+      addBubble(0, col, randomColor());
+    }
+
+    showToast("Новый ряд");
+
+    missesLeft = MAX_MISSES;
+    updateHud();
+    checkGameOver();
+  }
+
+  function checkGameOver() {
+    const rect = canvas.getBoundingClientRect();
+    const dangerY = shooter ? shooter.y - 82 : rect.height - 186;
+
+    const lost = bubbles.some(b => b.y + R >= dangerY);
+    if (!lost) return false;
+
+    gameOver = true;
+    if (animationId) {
+      cancelAnimationFrame(animationId);
+      animationId = null;
+    }
+    endTitleEl.textContent = "Игра окончена";
+    endMessageEl.innerHTML = `Счёт: <b id="finalScore">${score}</b>`;
+    gameOverEl.classList.add("show");
+    return true;
+  }
+
+  function checkWin() {
+    if (bubbles.length) return false;
+
+    gameOver = true;
+    if (animationId) {
+      cancelAnimationFrame(animationId);
+      animationId = null;
+    }
+    endTitleEl.textContent = "Победа!";
+    endMessageEl.innerHTML = `Поле очищено · Счёт: <b id="finalScore">${score}</b>`;
+    gameOverEl.classList.add("show");
+    showToast("Поле очищено!");
+    return true;
+  }
+
+  function restartGame() {
+    if (animationId) {
+      cancelAnimationFrame(animationId);
+      animationId = null;
+    }
+
+    score = 0;
+    shotCount = 0;
+    missesLeft = MAX_MISSES;
+    gameOver = false;
+    combo = 0;
+    nextColor = randomColor();
+    gameOverEl.classList.remove("show");
+    endTitleEl.textContent = "Игра окончена";
+    endMessageEl.innerHTML = 'Счёт: <b id="finalScore">0</b>';
+    comboToastEl.classList.remove("show");
+
+    createBoard();
+    setupShooter();
+    shooter.color = randomColor();
+    nextColor = randomColor();
+    updateHud();
+    draw();
+  }
+
+  function drawBubble(b) {
+    const g = ctx.createRadialGradient(
+      b.x - R * .35, b.y - R * .4, R * .1,
+      b.x, b.y, R
+    );
+    g.addColorStop(0, "#ffffff");
+    g.addColorStop(.18, b.color);
+    g.addColorStop(1, b.color);
+
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, R, 0, Math.PI * 2);
+    ctx.fillStyle = g;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(b.x - R * .35, b.y - R * .42, R * .18, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255,255,255,.65)";
+    ctx.fill();
+  }
+
+  function traceAim(angle) {
+    const rect = canvas.getBoundingClientRect();
+    const step = 4;
+    let x = shooter.x;
+    let y = shooter.y;
+    let vx = Math.cos(angle) * step;
+    let vy = Math.sin(angle) * step;
+    let bounces = 0;
+    const points = [];
+    let hitPoint = null;
+    let hitBubble = null;
+
+    for (let i = 0; i < 1600; i++) {
+      x += vx;
+      y += vy;
+
+      if (x - R <= 0) {
+        x = R;
+        vx *= -1;
+        bounces++;
+      } else if (x + R >= rect.width) {
+        x = rect.width - R;
+        vx *= -1;
+        bounces++;
+      }
+
+      if (y - R <= 0) {
+        y = R;
+        hitPoint = { x, y };
+        points.push({ x, y });
+        break;
+      }
+
+      points.push({ x, y });
+
+      let collision = false;
+      for (const b of bubbles) {
+        if (Math.hypot(x - b.x, y - b.y) <= R * 2 - 1) {
+          hitPoint = { x, y };
+          hitBubble = b;
+          collision = true;
+          break;
+        }
+      }
+
+      if (collision || bounces >= 3) break;
+    }
+
+    return { points, hitPoint, hitBubble };
+  }
+
+  function drawAimGuide(angle) {
+    const trace = traceAim(angle);
+
+    ctx.save();
+
+    // Цепочка маленьких точек — удобнее на телефоне, чем длинный пунктир.
+    for (let i = 10; i < trace.points.length; i += 7) {
+      const p = trace.points[i];
+      const fade = Math.max(.18, 1 - i / Math.max(trace.points.length, 1) * .55);
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 2.4, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(17,24,39,${0.48 * fade})`;
+      ctx.fill();
+    }
+
+    // Маркер предполагаемой точки столкновения.
+    if (trace.hitPoint) {
+      ctx.beginPath();
+      ctx.arc(trace.hitPoint.x, trace.hitPoint.y, 5.5, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(17,24,39,.5)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    // Показываем не только столкновение, но и точную ячейку,
+    // в которую шар будет установлен после выстрела.
+    if (trace.hitPoint) {
+      const landingCell = findNearestEmptyCell(
+        trace.hitPoint.x,
+        trace.hitPoint.y,
+        trace.hitBubble
+      );
+
+      if (landingCell) {
+        const landing = cellPosition(landingCell.row, landingCell.col);
+        ctx.globalAlpha = .38;
+        drawBubble({ x: landing.x, y: landing.y, color: shooter.color });
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.arc(landing.x, landing.y, R + 3, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(17,24,39,.62)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    }
+
+    ctx.restore();
+  }
+
+  function drawShooter() {
+    if (!shooter) return;
+
+    const dx = pointer.x - shooter.x;
+    const dy = pointer.y - shooter.y;
+    let angle = Math.atan2(dy, dx);
+
+    // Целиться вниз нельзя.
+    if (angle > -0.08) angle = -0.08;
+
+    drawAimGuide(angle);
+
+    ctx.save();
+    ctx.translate(shooter.x, shooter.y);
+    ctx.rotate(angle + Math.PI / 2);
+    ctx.lineCap = "round";
+    ctx.lineWidth = 10;
+    ctx.strokeStyle = "#111827";
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, -30);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.beginPath();
+    ctx.arc(shooter.x, shooter.y, 24, 0, Math.PI * 2);
+    ctx.fillStyle = "#374151";
+    ctx.fill();
+
+    drawBubble({ x: shooter.x, y: shooter.y, color: shooter.color });
+
+    ctx.fillStyle = "#6b7280";
+    ctx.font = "12px system-ui";
+    ctx.textAlign = "center";
+    ctx.fillText("Следующий", shooter.x, shooter.y + 42);
+    drawBubble({ x: shooter.x, y: shooter.y + 62, color: nextColor });
+  }
+
+  function draw() {
+    const rect = canvas.getBoundingClientRect();
+    ctx.clearRect(0, 0, rect.width, rect.height);
+
+    ctx.fillStyle = "#e5e7eb";
+    ctx.fillRect(0, 0, rect.width, rect.height);
+
+    ctx.strokeStyle = "rgba(255,255,255,.45)";
+    ctx.lineWidth = 1;
+    for (let x = 0; x < rect.width; x += 32) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, rect.height);
+      ctx.stroke();
+    }
+    for (let y = 0; y < rect.height; y += 32) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(rect.width, y);
+      ctx.stroke();
+    }
+
+    bubbles.forEach(drawBubble);
+    drawShooter();
+  }
+
+  function updatePointer(e) {
+    const rect = canvas.getBoundingClientRect();
+    pointer.x = e.clientX - rect.left;
+    pointer.y = e.clientY - rect.top;
+
+    if (pointer.y > shooter.y - 10) pointer.y = shooter.y - 10;
+    draw();
+  }
+
+  function neighbors(row, col) {
+    // Шесть соседей для hex-сетки.
+    const even = row % 2 === 0;
+    const offsets = even
+      ? [[0,-1],[0,1],[-1,-1],[-1,0],[1,-1],[1,0]]
+      : [[0,-1],[0,1],[-1,0],[-1,1],[1,0],[1,1]];
+
+    return offsets
+      .map(([dr, dc]) => [row + dr, col + dc])
+      .filter(([r,c]) => isValidCell(r,c));
+  }
+
+  function findNearestEmptyCell(x, y, hitBubble) {
+    if (!hitBubble) {
+      // Попадание в верхнюю границу.
+      let best = null;
+      let bestDist = Infinity;
+      for (let col = 0; col < cols; col++) {
+        const p = cellPosition(0, col);
+        if (!isValidCell(0,col) || occupied(0,col)) continue;
+        const d = Math.hypot(x - p.x, y - p.y);
+        if (d < bestDist) {
+          bestDist = d;
+          best = { row: 0, col };
+        }
+      }
+      return best;
+    }
+
+    const candidates = neighbors(hitBubble.row, hitBubble.col)
+      .filter(([r,c]) => !occupied(r,c));
+
+    let best = null;
+    let bestDist = Infinity;
+
+    for (const [r,c] of candidates) {
+      const p = cellPosition(r,c);
+      const d = Math.hypot(x - p.x, y - p.y);
+      if (d < bestDist) {
+        bestDist = d;
+        best = { row: r, col: c };
+      }
+    }
+    if (best) return best;
+
+    // Редкий пограничный случай: все шесть соседей точки столкновения заняты.
+    // Ищем ближайшую свободную ячейку, которая соединена с потолком или шарами.
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        if (!isValidCell(row, col) || occupied(row, col)) continue;
+        const attached = row === 0 ||
+          neighbors(row, col).some(([r,c]) => occupied(r,c));
+        if (!attached) continue;
+
+        const p = cellPosition(row, col);
+        const d = Math.hypot(x - p.x, y - p.y);
+        if (d < bestDist) {
+          bestDist = d;
+          best = { row, col };
+        }
+      }
+    }
+    return best;
+  }
+
+  function findCollision(projectile) {
+    let hit = null;
+    let min = Infinity;
+
+    for (const b of bubbles) {
+      const d = Math.hypot(projectile.x - b.x, projectile.y - b.y);
+      if (d <= R * 2 - 1 && d < min) {
+        min = d;
+        hit = b;
+      }
+    }
+    return hit;
+  }
+
+  function addBubble(row, col, color) {
+    const p = cellPosition(row, col);
+    bubbles.push({ row, col, x: p.x, y: p.y, color });
+  }
+
+  function sameColorGroup(start) {
+    const target = bubbleAt(start.row, start.col);
+    if (!target) return [];
+
+    const found = [];
+    const queue = [target];
+    const visited = new Set([key(target.row, target.col)]);
+
+    while (queue.length) {
+      const b = queue.shift();
+      found.push(b);
+
+      for (const [r,c] of neighbors(b.row, b.col)) {
+        const k = key(r,c);
+        const n = bubbleAt(r,c);
+        if (n && n.color === target.color && !visited.has(k)) {
+          visited.add(k);
+          queue.push(n);
+        }
+      }
+    }
+    return found;
+  }
+
+  function removeFloating() {
+    const connected = new Set();
+    const queue = [];
+
+    for (const b of bubbles) {
+      if (b.row === 0) {
+        connected.add(key(b.row,b.col));
+        queue.push(b);
+      }
+    }
+
+    while (queue.length) {
+      const b = queue.shift();
+      for (const [r,c] of neighbors(b.row,b.col)) {
+        const n = bubbleAt(r,c);
+        const k = key(r,c);
+        if (n && !connected.has(k)) {
+          connected.add(k);
+          queue.push(n);
+        }
+      }
+    }
+
+    const before = bubbles.length;
+    bubbles = bubbles.filter(b => connected.has(key(b.row,b.col)));
+    return before - bubbles.length;
+  }
+
+  function resolveMatches(placed) {
+    const group = sameColorGroup(placed);
+
+    if (group.length >= 3) {
+      const removed = new Set(group.map(b => key(b.row,b.col)));
+      bubbles = bubbles.filter(b => !removed.has(key(b.row,b.col)));
+
+      const floating = removeFloating();
+      combo += 1;
+
+      const base = group.length * 10 + floating * 20;
+      const comboBonus = combo > 1 ? (combo - 1) * 25 : 0;
+      score += base + comboBonus;
+
+      if (floating > 0) {
+        showToast(`Падение! +${floating * 20}`);
+      } else if (combo > 1) {
+        showToast(`Комбо ×${combo}`);
+      }
+
+      updateHud();
+      checkWin();
+      return true;
+    }
+
+    combo = 0;
+    return false;
+  }
+
+  function finishShot(projectile, hitBubble) {
+    if (animationId) {
+      cancelAnimationFrame(animationId);
+      animationId = null;
+    }
+
+    const cell = findNearestEmptyCell(projectile.x, projectile.y, hitBubble);
+    let matched = false;
+
+    if (cell) {
+      addBubble(cell.row, cell.col, projectile.color);
+      const placed = bubbleAt(cell.row, cell.col);
+      matched = resolveMatches(placed);
+    }
+
+    if (matched) {
+      missesLeft = MAX_MISSES;
+    } else {
+      missesLeft -= 1;
+    }
+
+    shooter.color = nextColor;
+    nextColor = randomColor();
+    shotCount++;
+
+    if (shotCount >= 1) hintEl.classList.add("hidden");
+
+    updateHud();
+
+    if (checkGameOver()) {
+      draw();
+      return;
+    }
+
+    if (missesLeft <= 0) {
+      addPenaltyRow();
+      if (gameOver) {
+        draw();
+        return;
+      }
+    }
+
+    draw();
+  }
+
+  function shoot() {
+    if (!shooter || animationId || gameOver) return;
+
+    const dx = pointer.x - shooter.x;
+    const dy = pointer.y - shooter.y;
+    if (dy > -15) return;
+
+    const length = Math.hypot(dx, dy) || 1;
+    const vx = dx / length;
+    const vy = dy / length;
+
+    const projectile = {
+      x: shooter.x,
+      y: shooter.y,
+      vx: vx * 8,
+      vy: vy * 8,
+      color: shooter.color
+    };
+
+    function animate() {
+      projectile.x += projectile.vx;
+      projectile.y += projectile.vy;
+
+      const rect = canvas.getBoundingClientRect();
+
+      if (projectile.x - R <= 0) {
+        projectile.x = R;
+        projectile.vx *= -1;
+      }
+      if (projectile.x + R >= rect.width) {
+        projectile.x = rect.width - R;
+        projectile.vx *= -1;
+      }
+
+      const hit = findCollision(projectile);
+      if (hit) {
+        finishShot(projectile, hit);
+        return;
+      }
+
+      if (projectile.y - R <= 0) {
+        projectile.y = R;
+        finishShot(projectile, null);
+        return;
+      }
+
+      draw();
+      drawBubble(projectile);
+      animationId = requestAnimationFrame(animate);
+    }
+
+    animationId = requestAnimationFrame(animate);
+  }
+
+  canvas.addEventListener("pointermove", updatePointer);
+  canvas.addEventListener("pointerdown", e => {
+    updatePointer(e);
+    shoot();
+  });
+
+  restartBtn.addEventListener("click", restartGame);
+
+  window.addEventListener("resize", resize);
+  updateHud();
+  resize();
+})();
+</script>
+</body>
+</html>
